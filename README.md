@@ -1,11 +1,35 @@
-# ratesdotca-backend
+# ratesdotca-backend (BACK-END DEV ASSIGNMENT)
 
 
 ## Question 1
-For page 1 customer form and page 2 vehicle form: 
+Please show what MYSQL tables and what classes you would create to accommodate for the
+following 2 page form: (You can use any language, or just pseudocode for the classes)
 
 
-### Answer - Tables
+**First Page**
+
+First Name: [ ]
+
+Last Name: [ ]
+
+Phone: [ ]
+
+
+**Second Page**
+
+Vehicle 1 Vehicle 2 Vehicle 3 Vehicle 4
+
+Year: [ ] Year: [ ] Year: [ ] Year: [ ]
+
+Make: [ ] Make: [ ] Make: [ ] Make: [ ]
+
+Model: [ ] Model: [ ] Model: [ ] Model: [ ] 
+
+
+
+### Answer (Tables)
+
+The following tables will be created:
 
 `customer` - for storing customer data from page 1
 fields: 
@@ -13,251 +37,214 @@ fields:
 id bigint(20) unsigned not null primary key auto_increment,
 firstname varchar(128) not null,
 lastname varchar(128) not null,
-phone varchar(32) not null
+phone varchar(32) not null,
+created_at timestamp default current_timestamp(),
+updated_at timestamp default current_timestamp() on update current_timestamp
 ```
 
-`vehicle` - for storing vehicle data from page 2
-fields: 
+`make` - for storing brand of the car/vehicle
+fields:
 ```
-id bigint(20) unsigned not null primary key auto_increment,
+id smallint(5) unsigned not null primary key auto_increment,
+make_name varchar(128) not null
+```
+
+`model` - for storing the model of a particular make of the car/vehicle
+fields:
+```
+id int(11) unsigned not null primary key auto_increment,
+make_id smallint(5) not null,
+model_name varchar(128) not null,
 year smallint(4) not null,
-make varchar(128) not null,
-model varchar(255) not null
+foreign key make_id references make(id)
 ```
 
-`customer_vehicle` - for mapping relationship between customer and vehicle (just in case manager / administrator decides to view a report about a certain customer or most popular vehicles)
-fields: 
+`vehicle` - for storing vehicle data associated to the customer
 ```
 id bigint(20) unsigned not null primary key auto_increment,
+model_id int(11) unsigned not null,
 customer_id bigint(20) unsigned not null,
-vehicle_id bigint(20) unsigned not null,
-foreign key (customer_id) references customer(id),
-foreign key (vehicle_id) references vehicle(id),
+created_at timestamp default current_timestamp(),
+updated_at timestamp default current_timestamp() on update current_timestamp
 ```
 
 
 ### Answer - Model Classes
 
-`Customer` - For the customer data form in page 1
-`Vehicle` - For the vehicle data form in page 2. I intend to put the relationship of the customer and vehicle to a separate table and class just in case a manager/administrator wants to lookup the most popular vehicles, etc. 
-`CustomerVehicle` - For the customer's transaction with a vehicle
+Following model classes will be created:
+
+`Customer` - For the customer data form in page 1.
+`Make` - For the make/brand names to store at the backend.
+`Model` - For the model names to store at the backend.
+`Vehicle` - For the vehicle data form IDs in page 2. 
+
 
 ## Question 2
 
-2. Now that you have the tables and class models created, please explain what MVC classes you would create to make this form, and save the form data to the database. (You can use any MVC frame work in any language, or just pseudocode to demonstrate the MVC pattern)  
+Now that you have the tables and class models created, please explain what MVC classes you would create to make this form, and save the form data to the database. (You can use any MVC frame work in any language, or just pseudocode to demonstrate the MVC pattern)  
 
+### Classes / templates to use when creating the page 1 form
+#### Controller classes
+`CustomerController` - class will have an `add` method to be used as a controller method for displaying the page 1 of the form
+```
+class CustomerController
+{
+    public function add()
+    {
+        return view('customer_form');
+    }
+ }
+ ```
+#### View template
+`customer_form.blade.php` - template file where the user can enter their page 1 details. Form method is POST and will have the following inputs:
 
-Model classes
+First Name (firstname)
+Last Name (lastname)
+Phone  number (phone)
 
-`Customer.php`
+#### Classes to use when saving the page 1 form data
+
+`CustomerController` - class will have a `save` method where customer data will be saved
+```
+class CustomerController
+{
+    // ...add() codes here
+    
+    public function save(Request $request)
+    {
+         // Get form data, save into $data
+         // instantiate an instance of Customer model class $customer
+         // Set customer data
+         // Save customer data through a $customer->save() method
+         // Redirect to page 2 of the form
+     }
+ }
+```
+
+`Customer` - model class will have a `save` method where customer data will be inserted/updated to the database
+
 ```
 class Customer
 {
-    private $id;
-
-    private $firstname;
-
-    private $lastname;
-
-    private $phone;
-
-    public function setId($id)
+    // ...Rest of the setter, getter, etc codes here...
+    public function save()
     {
-        $this->id = $id;
+        // Initialize save insert/update to the database here using the object's properties as its data
     }
-
-    public function getId()
-    {
-        return $this->id;
-    }
-    
-    public function setFirstname($firstname)
-    {
-        $this->firstname = $firstname;
-    }
-
-    public function getFirstname()
-    {
-        return $this->firstname;
-    }
-
-    // ...Same goes for make and model, both fields will have setter and getter methods
-    // public function setLastname($lastname)
-    // public function getLastname()
-    // public function setPhone($phone)
-    // public function getPhone()
-    
 }
 ```
+ 
+ ### Classes/templates to use when creating the page 2 form
+ #### Controller classes
+ `VehicleController` - this will have an `add` method for displaying the 2nd page's form
+ ```
+ class VehicleController
+ {
+     public function add()
+     {
+         $vars = [
+             'makes' => Make::getList(),
+         ];
+         // Return the template and use the variables $vars for the dropdown choices
+         return view('vehicle_form', $vars);
+     }
+     
+     public function getModels()
+     {
+         // Get year and make data, if available
+         // Retrieve the models data
+         $models = Model::getList($year, $makeId);
+         // Return data in JSON format
+         return json_encode($models);
+      }
+ }
+ ```
+ 
+ #### View template
+`vehicle_form.blade.php` - template file where the user can enter the vehicle details in page 2. Form method is POST and will have the following inputs (4 times or more):
 
-`Vehicle.php`
+* Year (year) - text input 
+* Make (make_id) - dropdown with choices coming from $makes, which came from Make::getList()
+* Model (model_id) - choices coming from an AJAX call to `VehicleController::getModels()` method that executes after year and make data are supplied
+
+
+ #### Model classes
+ `Customer` - for retrieving the customer model associated to the Vehicle for user's reference, just in case
+ ```
+ class Customer
+ {
+     // ...Setter, getter methods here
+     public function getCustomerById($id)
+     {
+         // Retrieve a customer model by $id into $customer
+         // Return $customer object found
+     }
+ }
+ ```
+ 
+ 
+ `Make` - for retrieving a list of makes for a vehicle
+ ```
+ class Make
+ {
+     // Setter, getter methods above...
+     public static function getList()
+     {
+         // Query the database to get a list of available makes
+         // Store makes into a $makes array keyed by make ID with the brand name as the value
+         // $makes[$makeId] = $name
+         // Return the $makes array
+     }
+ }
+ ```
+ 
+ `Model` - for retrieving a list of models when the make is specified
+```
+ class Model
+ {
+     // Setter, getter methods above...
+     public static function getList($year = null, $makeId = null)
+     {
+         // Query the database to get a list of available makes
+         // Use the $year and/or make ID parameters, if supplied, for the WHERE clause
+         // Store makes into a $models array keyed by model ID with the brand name as the value
+         // $models[$modelId] = $name
+         // Return the $models array
+     }
+ }
+ ```
+#### Classes to use when saving the page 2 vehicle data 
+
+`VehicleController` - class will have a `save` method where customer data will be saved
+```
+class VehicleController
+{
+    // ...add() codes here
+    
+    public function save(Request $request)
+    {
+         // Get form data, save into $data
+         // instantiate an instance of Vehicle model class $vehicle
+         // Set vehicle data (year, model_id)
+         // Save customer data through a $vehicle->save() method
+         // Redirect to page 2 of the form
+     }
+ }
+```
+
+`Vehicle` - model class will have a `save` method where vehicle data will be inserted/updated to the database
 
 ```
 class Vehicle
 {
-    private $id;
-
-    private $year;
-
-    private $make;
-
-    private $model;
-
-    public function setId($id)
+    // ...Rest of the setter, getter, etc codes here...
+    public function save()
     {
-        $this->id = $id;
-    }
-
-    public function getId()
-    {
-        return $this->id;
-    }
-    
-    public function setYear($year)
-    {
-        $this->year = $year;
-    }
-
-    public function getYear()
-    {
-        return $this->year;
-    }
-    
-    // ...Same goes for make and model, both fields will have setter and getter methods
-    
-}
-```
-
-`CustomerVehicle.php`
-
-```
-class CustomerVehicle
-{
-    private $id;
-
-    private $customerId;
-
-    private $vehicleId;
-
-    private $customerRepository;
-
-    private $vehicleRepository;
-
-    public function __construct(
-        CustomerRepository $customerRepository,
-        VehicleRepository $vehicleRepository
-    ) {
-        $this->customerRepository = $customerRepository;
-        $this->vehicleRepository = $vehicleRepository;
-    }
-
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    // ...Same goes for customer_id and vehicle_id, both will have setter and getter methods
-    // public function setCustomerId($customerId)
-    // public function getCustomerId()
-    // public function setVehicleId($vehicleId)
-    // public function getVehicleId()
-
-    // There'll be methods to get corresponding customer and vehicle model
-    public function getCustomer()
-    {
-        $customer = $this->customerRepository->getById($this->customerId);
-        return $customer;
-    }
-
-    public function getVehicle()
-    {
-        $vehicle = $this->vehicleRepository->getById($this->vehicleId);
-        return $vehicle;
+        // Initialize save insert/update to the database here using the object's properties as its data
     }
 }
 ```
 
-
-Controller classes - 
-
-```
-class CustomerController
-{
-    /**
-     * Controller to show page 1 of form
-     * GET /customer
-     */
-    public function show()
-    {
-        return view('customer.form');
-    }
-
-    /**
-      *
-    public function save(
-        Request $request, 
-        CustomerRepository $customerRepository
-    ) {
-        $data = $request->all();
-
-        $customer = $customerRepository->save($data);
-
-        if ($customer->getId()) {
-            $customerId = $customer->getId();
-            return redirect('/customer/'.$customerId.'/vehicle');
-        }
-
-        return redirect('/customer/error');
-    }
-}
-```
-
-```
-class VehicleController
-{
-    /**
-     * Controller to show page 2 of form
-     * GET /customer
-     */
-    public function show()
-    {
-        return view('vehicle.form');
-    }
-
-    /**
-     * Controller to save page 2 customer data
-     * @param Request $request
-     * @param CustomerRepository $customerRepository
-     * @return redirect
-     */
-    public function save(
-        Request $request,
-        VehicleRepository $vehicleRepository
-    ) {
-        $data = $request->all();
-
-        $customer = $vehicleRepository->save($data);
-
-        if ($customer->getId()) {
-            $customerId = $customer->getId();
-            return redirect('/vehicle/success');
-        }
-
-        return redirect('/vehicle/error');
-    }
-
-}
-```
-
-View templates:
-
-`views/customer/form.blade.php` (e.g. for Laravel) - template file for the 1st form where user can enter their details
-`views/vehicle/form.blade.php` - template file for the 2nd form where user can enter the vehicles they prefer
 
 ## Question 3
 
@@ -272,9 +259,11 @@ have to change database but still be able to add more fields and data for each f
 (No change to table structure, but still be able to add data to the tables of your new design)
 And how would your MVC classes look like now that you have this new design?
 
-### ANSWER
+### Answer
 
-If the manager requests for an additional field frequently/daily, I think I would add tables based on the Entity-Attribute-Value pattern. Magento does this to allow the business to add additional fields on the fly. Below is a list of additional tables and MVC classes that will be added.
+If the manager requests for an additional field frequently/daily, we should add tables based on the Entity-Attribute-Value pattern. This will allow the business to add fields on the fly. 
+
+Below is a list of additional tables and MVC classes to be added.
 
 ### Additional tables 
 
@@ -289,9 +278,9 @@ is_required smallint(2) not null default 0,
 is_unique smallint(2) not null default 0
 ```
 
-I will create `customer_entity_<data-type>` tables where the `value` column will have a data type of varchar/int/decimal/text/datetime. E.g. 
+`customer_entity_<data-type>` tables will be created. Each will have a `value` column that will have a data type of varchar/int/decimal/text/datetime depending on the table's name. E.g. 
 
-`customer_entity_varchar`
+* `customer_entity_varchar`
 fields:
 ```
 id bigint(20) not null primary key auto_increment,
@@ -300,16 +289,15 @@ attribute_id smallint(5) not null,
 value varchar(255)
 ```
 
-`customer_entity_int` - Same as customer_entity_varchar except that the `value` has a data type of `int(11)`
-`customer_entity_decimal` - Field `value` will have a data type of `decimal(12, 4)`
-`customer_entity_text` - Field `value` will have a data type of `text` 
-`customer_entity_datetime` - Field `value` will have a data type of `datetime`
+* `customer_entity_int` - value` will have a data type of `int(11)`
+* `customer_entity_decimal` - `value` will be of type `decimal(12, 4)`
+* `customer_entity_text` - Field `value` will be of type `text` 
+* `customer_entity_datetime` - `value` will be of type `datetime`
 
-Same thing that I will do for vehicle data (`vehicle_entity_<data-type>` tables):
+Same will be done for additional vehicle field requests. `vehicle_entity_<data-type>` tables will be created. Field `value` will have a data type depending on table's name. E.g. 
 
-`vehicle_entity_varchar`
+* `vehicle_entity_varchar` will have a `value` column of type `varchar(255)`
 
-fields:
 ```
 id bigint(20) not null primary key auto_increment,
 vehicle_id bigint(20) unsigned not null,
@@ -317,184 +305,144 @@ attribute_id smallint(5) not null,
 value varchar(255)
 ```
 
-`vehicle_entity_int` - Same structure as vehicle_entity_varchar except that the `value` will have a data type of int(11)
-`vehicle_entity_decimal` - Field `value` will have a data type of `decimal(12, 4)`
-`vehicle_entity_text` - Field `value` will have a data type of `text`
-`vehicle_entity_datetime` - Field `value` will have a data type of `datetime`
-
+* `vehicle_entity_int` - Field `value` will be of type int(11)
+* `vehicle_entity_decimal` - `value` will be of type `decimal(12, 4)`
+* `vehicle_entity_text` - `value` will be of type of `text`
+* `vehicle_entity_datetime` - `value` will be of type `datetime`
 
 
 ### Additional model/s
 
-`EntityAttribute` - For the additional columns/attributes that could be added to the customer or vehicle
-
+`EntityAttribute` - For the additional columns/attributes that could be added to the customer or vehicle. This will be mapped to the `entity_attributes` table. 
 ```
 class EntityAttribute
 {
-    /**
-     * @var int
-     */
     private $id;
-
-    /**
-     * @var string
-     */
     private $code;
-
-    // And the rest of the fields e.g. private $label; etc...
-
+    // and the rest of the fields $label, $dataType,  $isRequired, $isUnique
     public function setId($id)
     {
         $this->id = $id;
     }
-
-    /**
-     * @return int
-     */
     public function getId()
     {
         return $this->id;
     }
-
-    // Rest of the fields will have their setter and getter methods also e.g.
-    // public function setCode($code)
-    // public function getCode()
-
+    // .. and the rest of the setter and getter methods for $code, $label, $dataType, $isRequired, $isUnique
 }
 ```
 
-`CustomerAttribute` - For the additional fields that will be added for the Customer
-
+`CustomerEntityRepository` - For saving / retrieving data towards the `customer_entity_<data-type>` tables.
 ```
-class CustomerAttribute
+class CustomerEntityRepository
 {
-    /**
-     * @var array
-     */
-    private $values;
-
-    /**
-     * Hydrate the object with attribute values coming from customer_entity_<data-type> tables
-     * @param $customerId
-     */
-    public static function load($customerId)
+    public static function getAttributes($customerId)
     {
-        // Query the customer_entity_<data-type> tables that contain data about the customer with ID $customerId
-        // Store them into a $values array
-        // Each element will have a key of $attributeId with the value of $value
-        // $this->values[$attributeId] = $value;
-        $customerAttribute = new static;
-        // Assign values thru $customerAttribute->setValues($values) then return the $customerAttribute object
-        return $customerAttribute;
+        // Query customer_entity_<data-type> tables
+        // Store results into the $attributes property as array
+        // Keyed by attribute_id:
+        // $attributes[$attribute_id] = $customerEntityAttributeRow
+        // Return $attributes
     }
-
-    /**
-     * Set an array of values
-     * @param $values
-     */
-    public function setValues($values)
+    
+    public static function saveAttributes($customerId, array $attributes)
     {
-        $this->values = $values;
-    }
-
-    /**
-     * Return an array of attribute values $values
-     * Each element is keyed by attribute ID with its value
-     * $values[$attributeId] = $value
-     * @return array
-     */
-    public function getValues()
-    {
-        return $this->values;
+        // Loop through each attribute in $attributes array
+        // Save each attribute to their respective tables
     }
 }
 ```
 
-`VehicleAttribute` - For the additional fields that will be added for the Vehicle
-
+`VehicleEntityRepository` - For saving / retrieving data towards the `vehicle_entity_<data-type>` tables.
 ```
-class VehicleAttribute
+class VehicleEntityRepository
 {
-    /**
-     * @var array
-     */
-    private $values;
-
-    /**
-     * Hydrate the object with attribute values coming from customer_entity_<data-type> tables
-     * @param $customerId
-     */
-    public function load($vehicleId)
+    public static function getAttributes($vehicleId)
     {
-        // Store them into a $values array
-        // Each element will have a key of $attributeId with the value of $value
-        // $this->values[$attributeId] = $value;
-        $vehicleAttribute = new static;
-        // Assign values thru $vehicleAttribute->setValues($values) then return the $vehicleAttribute object
-        return $vehicleAttribute;
+        // Query customer_entity_<data-type> tables
+        // Store results into the $attributes property as array
+        // Keyed by attribute_id:
+        // $attributes[$attribute_id] = $vehicleEntityAttributeRow
+        // Return $attributes
     }
-
-    /**
-     * Return an array of attribute values $values
-     * Each element is keyed by attribute ID with its value
-     * $values[$attributeId] = $value
-     * @return array
-     */
-    public function getValues()
+    
+    public static function saveAttributes($vehicleId, array $attributes)
     {
-        return $this->values;
+        // Loop through each attribute in $attributes array
+        // Save each attribute to their respective tables
     }
 }
 ```
 
 ### Model updates
 
-`Customer` - customer model will have the following updates
-
+`Customer` - customer model class will call the `CustomerEntityRepository::getAttributes` and `CustomerEntityRepository::saveAttributes` methods to retrieve / save data
 ```
 class Customer
 {
-    // ...Rest of the existing member declaration code here
-
-    /**
-     * @var array
-     */
-    private $customerAttributeValues;
-
-    // ... Rest of the existing code here
-    public function getCustomerAttributeValues()
+     // Add the $attributes array property below the initially declared properties
+     private $attributes;
+    
+     // ...rest of methods here
+    
+    public function getCustomerById($id)
     {
-        $this->customerAttributes = CustomerAttribute::load($this->id);
-        return $this->customerAttribute->getValues();
+        // Retrieve a customer model by $id into $customer
+        // Call the CustomerEntityRepository::getAttributes method to get other customer data
+        $this->attributes = CustomerEntityRepository::getAttributes($id);
+        // Return $customer object found
+    }
+    
+    public function save()
+    {
+        // Initialize save insert/update to the database here using the object's properties as its data
+        // Save additional data thru CustomerEntityRepository::saveAttributes()
+        CustomerEntityRepository::saveAttributes($customerId, $this->attributes);
+        return $customer;
     }
 }
 ```
-
-`Vehicle` - vehicle model will have the following updates
+        
+`Vehicle` - vehicle model class will call the `VehicleEntityRepository::getAttributes` and `VehicleEntityRepository::saveAttributes` methods to retrieve / save data
 ```
 class Vehicle
 {
-    // ...Rest of the existing member declaration code here
+     // Add the $attributes array property below the initially declared properties
+     private $attributes;
 
-    /**
-     * @var array
-     */
-    private $vehicleAttributeValues;
+     // ...rest of methods here
 
-    // ... Rest of the existing code here
-    public function getVehicleAttributeValues()
+    public function getVehicleById($id)
     {
-        $this->vehicleAttributes = VehicleAttribute::load($this->id);
-        return $this->vehicleAttribute->getValues();
+        // Retrieve a vehicle model by $id into $vehicle
+        // Call the VehicleEntityRepository::getAttributes method to get other vehicle data
+        $this->attributes = VehicleEntityRepository::getAttributes($id);
+        // Return $vehicle object found
+    }
+
+    public function save()
+    {
+        // Initialize save insert/update to the database here using the object's properties as its data
+        // Save additional data thru VehicleEntityRepository::saveAttributes()
+        VehicleEntityRepository::saveAttributes($vehicleId, $this->attributes);
+        return $vehicle;
     }
 }
 ```
 
+### View template updates
 
-### Template updates
+The following templates will be updated such that the rest of the form inputs with a name of `attributes[<attribute_id]`. These inputs will be put under the fields that were initially created for the customer (which is the `phone` field) and vehicle (`model` field).
 
-The following templates will be updated such that the rest of the form inputs with a name of `attributes[<attribute_id]`. These inputs will be put under the fields that were initially created for the customer (which is the `phone` field) and vehicle (`model` field)
-`views/customer/form.blade.php`
-`views/vehicle/form.blade.php`
+customer_form.blade.php
+* First name input
+* Last name input
+* Phone input
+* attributes[attribute_id] input, etc.
 
-### Controller updates
+vehicle_form.blade.php
+* Year input
+* Make dropdown
+* Model dropdown
+* attributes[attribute_id] input, etc.
+
