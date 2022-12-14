@@ -65,7 +65,9 @@ id bigint(20) unsigned not null primary key auto_increment,
 model_id int(11) unsigned not null,
 customer_id bigint(20) unsigned not null,
 created_at timestamp default current_timestamp(),
-updated_at timestamp default current_timestamp() on update current_timestamp
+updated_at timestamp default current_timestamp() on update current_timestamp,
+foreign key (customer_id) references customer(id),
+foreign key (model_id) references model(id)
 ```
 
 
@@ -73,18 +75,18 @@ updated_at timestamp default current_timestamp() on update current_timestamp
 
 Following model classes will be created:
 
-`Customer` - For the customer data form in page 1.
-`Make` - For the make/brand names to store at the backend.
-`Model` - For the model names to store at the backend.
-`Vehicle` - For the vehicle data form IDs in page 2. 
-
+* `Customer` - For the customer data form in page 1.
+* `Make` - For the make/brand names to store at the backend.
+* `Model` - For the model names to store at the backend.
+* `Vehicle` - For the vehicle data form IDs in page 2. 
 
 ## Question 2
 
 Now that you have the tables and class models created, please explain what MVC classes you would create to make this form, and save the form data to the database. (You can use any MVC frame work in any language, or just pseudocode to demonstrate the MVC pattern)  
 
 ### Classes / templates to use when creating the page 1 form
-#### Controller classes
+
+#### Controller
 `CustomerController` - class will have an `add` method to be used as a controller method for displaying the page 1 of the form
 ```
 class CustomerController
@@ -135,8 +137,9 @@ class Customer
 ```
  
  ### Classes/templates to use when creating the page 2 form
- #### Controller classes
- `VehicleController` - this will have an `add` method for displaying the 2nd page's form
+ #### Controller
+ `VehicleController` - this will have an `add` method for displaying the 2nd page's form. It will also have a `getModels` controller method that will load the models that fall under a certain make thru an Ajax call.
+ 
  ```
  class VehicleController
  {
@@ -198,7 +201,7 @@ class Customer
  }
  ```
  
- `Model` - for retrieving a list of models when the make is specified
+ `Model` - for retrieving a list of models once the Make ID `$makeId` is specified
 ```
  class Model
  {
@@ -213,9 +216,10 @@ class Customer
      }
  }
  ```
+ 
 #### Classes to use when saving the page 2 vehicle data 
 
-`VehicleController` - class will have a `save` method where customer data will be saved
+`VehicleController` - class will have a `save` method where vehicle data will be saved
 ```
 class VehicleController
 {
@@ -261,7 +265,7 @@ And how would your MVC classes look like now that you have this new design?
 
 ### Answer
 
-If the manager requests for an additional field frequently/daily, we should add tables based on the Entity-Attribute-Value pattern. This will allow the business to add fields on the fly. 
+If the manager requests for an additional field frequently, we should add tables based on the Entity-Attribute-Value (EAV) pattern. This will allow the business to add fields on the fly. 
 
 Below is a list of additional tables and MVC classes to be added.
 
@@ -329,6 +333,10 @@ class EntityAttribute
         return $this->id;
     }
     // .. and the rest of the setter and getter methods for $code, $label, $dataType, $isRequired, $isUnique
+    public function save()
+    {
+        // Save requested additional fields to the entity_attributes table
+    }
 }
 ```
 
